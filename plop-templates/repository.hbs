@@ -1,0 +1,89 @@
+import type { {{pascalCase name}}Entity } from "../../../domain/entities/{{kebabCase name}}.entity";
+import type {
+    I{{pascalCase name}}Repository,
+    {{pascalCase name}}Filters,
+    {{pascalCase name}}SortField,
+} from "../../../domain/repositories/{{kebabCase name}}.repository.interface";
+import type { QueryOptions } from "../../../domain/interfaces";
+import { PrismaBaseRepository } from "./base.repository";
+import { mapPrismaErrors } from "../exceptions";
+import {
+    to{{pascalCase name}}CreateData,
+    to{{pascalCase name}}Entity,
+    to{{pascalCase name}}UpdateData,
+} from "../mappers/{{kebabCase name}}.mapper";
+import { buildOrderBy } from "../where-clauses";
+import { build{{pascalCase name}}Where } from "../where-clauses/{{kebabCase name}}.where";
+
+export class {{pascalCase name}}Repository
+    extends PrismaBaseRepository
+    implements I{{pascalCase name}}Repository
+{
+    async findById(id: string): Promise<{{pascalCase name}}Entity | null> {
+        const row = await this.db.{{camelCase name}}.findFirst({ where: { id, deletedAt: null } });
+        return row ? to{{pascalCase name}}Entity(row) : null;
+    }
+
+    async findByName(name: string): Promise<{{pascalCase name}}Entity | null> {
+        const row = await this.db.{{camelCase name}}.findFirst({
+            where: { name: { equals: name.trim(), mode: "insensitive" }, deletedAt: null },
+        });
+        return row ? to{{pascalCase name}}Entity(row) : null;
+    }
+
+    async findMany(
+        options: QueryOptions<{{pascalCase name}}Filters, {{pascalCase name}}SortField>,
+    ): Promise<{{pascalCase name}}Entity[]> {
+        const rows = await this.db.{{camelCase name}}.findMany({
+            where: build{{pascalCase name}}Where(options.filters),
+            orderBy: buildOrderBy(options.sort),
+            skip: options.pagination.skip,
+            take: options.pagination.take,
+        });
+        return rows.map(to{{pascalCase name}}Entity);
+    }
+
+    async count(filters: {{pascalCase name}}Filters): Promise<number> {
+        return this.db.{{camelCase name}}.count({ where: build{{pascalCase name}}Where(filters) });
+    }
+
+    async exists(filters: {{pascalCase name}}Filters): Promise<boolean> {
+        const row = await this.db.{{camelCase name}}.findFirst({
+            where: build{{pascalCase name}}Where(filters),
+            select: { id: true },
+        });
+        return row !== null;
+    }
+
+    async create(entity: {{pascalCase name}}Entity): Promise<{{pascalCase name}}Entity> {
+        return mapPrismaErrors(async () => {
+            const row = await this.db.{{camelCase name}}.create({
+                data: to{{pascalCase name}}CreateData(entity),
+            });
+            return to{{pascalCase name}}Entity(row);
+        });
+    }
+
+    async update(entity: {{pascalCase name}}Entity): Promise<{{pascalCase name}}Entity> {
+        return mapPrismaErrors(async () => {
+            const row = await this.db.{{camelCase name}}.update({
+                where: { id: entity.id },
+                data: to{{pascalCase name}}UpdateData(entity),
+            });
+            return to{{pascalCase name}}Entity(row);
+        });
+    }
+
+    async softDelete(id: string): Promise<void> {
+        await mapPrismaErrors(() =>
+            this.db.{{camelCase name}}.update({
+                where: { id },
+                data: { deletedAt: new Date(), isActive: false },
+            }),
+        );
+    }
+
+    async hardDelete(id: string): Promise<void> {
+        await mapPrismaErrors(() => this.db.{{camelCase name}}.delete({ where: { id } }));
+    }
+}

@@ -1,0 +1,20 @@
+import type { {{pascalCase name}}Entity } from "../entities/{{kebabCase name}}.entity";
+import type { SoftDeleteFilter } from "../interfaces";
+import type { CrudRepository } from "./base.repository.interface";
+
+export interface {{pascalCase name}}Filters extends SoftDeleteFilter {
+    search?: string;
+    isActive?: boolean;
+}
+
+/** Closed union: a client cannot order by a column that is not listed here. */
+export type {{pascalCase name}}SortField = "createdAt" | "updatedAt" | "name";
+
+export interface I{{pascalCase name}}Repository
+    extends CrudRepository<{{pascalCase name}}Entity, {{pascalCase name}}Filters, {{pascalCase name}}SortField> {
+    /**
+     * Domain-specific lookups go here, alongside the generic CRUD contract.
+     * Delete this one if the aggregate does not need it.
+     */
+    findByName(name: string): Promise<{{pascalCase name}}Entity | null>;
+}

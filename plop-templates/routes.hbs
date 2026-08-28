@@ -1,0 +1,44 @@
+import { Router, type RequestHandler } from "express";
+import type { {{pascalCase name}}Controller } from "../controllers/{{kebabCase name}}.controller";
+import { UserRole } from "../../domain/enums";
+import {
+    create{{pascalCase name}}Schema,
+    list{{pascalCase name}}sSchema,
+    update{{pascalCase name}}Schema,
+} from "../DTOs/request/{{camelCase name}}s/{{kebabCase name}}.dto";
+import { uuidParam } from "../DTOs/request/common.dto";
+import { authorize } from "../middleware";
+import { validateBody, validateParams, validateQuery } from "../validators";
+
+export interface {{pascalCase name}}RouterDependencies {
+    controller: {{pascalCase name}}Controller;
+    authenticate: RequestHandler;
+    enforcePasswordChange: RequestHandler;
+}
+
+export function build{{pascalCase name}}Router(deps: {{pascalCase name}}RouterDependencies): Router {
+    const router = Router();
+    const { controller, authenticate, enforcePasswordChange } = deps;
+
+    const admin = authorize(UserRole.PlatformAdmin, UserRole.TenantAdmin);
+
+    router.use(authenticate, enforcePasswordChange);
+
+    router
+        .route("/")
+        .get(validateQuery(list{{pascalCase name}}sSchema), controller.list)
+        .post(admin, validateBody(create{{pascalCase name}}Schema), controller.create);
+
+    router
+        .route("/:id")
+        .get(validateParams(uuidParam), controller.getById)
+        .patch(
+            admin,
+            validateParams(uuidParam),
+            validateBody(update{{pascalCase name}}Schema),
+            controller.update,
+        )
+        .delete(admin, validateParams(uuidParam), controller.delete);
+
+    return router;
+}

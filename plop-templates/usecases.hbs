@@ -1,0 +1,100 @@
+import { ConflictError, NotFoundError } from "../../../domain/errors";
+// Imported from the file, not the domain barrel: the generated module compiles
+// before you have added it to any index.ts.
+import { {{pascalCase name}}Entity } from "../../../domain/entities/{{kebabCase name}}.entity";
+import type {
+    AuthenticatedPrincipal,
+    Paginated,
+    QueryOptions,
+} from "../../../domain/interfaces";
+import type {
+    I{{pascalCase name}}Repository,
+    {{pascalCase name}}Filters,
+    {{pascalCase name}}SortField,
+} from "../../../domain/repositories/{{kebabCase name}}.repository.interface";
+import { assertTenantAdmin } from "../../authorization";
+import { paginate } from "../../paginate";
+
+export interface Create{{pascalCase name}}InputDto {
+    name: string;
+    isActive?: boolean;
+}
+
+export type Update{{pascalCase name}}InputDto = Partial<Create{{pascalCase name}}InputDto>;
+
+export class Create{{pascalCase name}}UseCase {
+    constructor(private readonly repository: I{{pascalCase name}}Repository) {}
+
+    async execute(
+        principal: AuthenticatedPrincipal,
+        input: Create{{pascalCase name}}InputDto,
+    ): Promise<{{pascalCase name}}Entity> {
+        assertTenantAdmin(principal);
+
+        // Pre-check for a clean, field-attributed 409. The database index is
+        // still the authority; mapPrismaErrors turns whatever races through
+        // into the same error shape.
+        const duplicate = await this.repository.findByName(input.name);
+        if (duplicate) {
+            throw new ConflictError("A {{lowerCase name}} with this name already exists", "name");
+        }
+
+        return this.repository.create(
+            {{pascalCase name}}Entity.create({ ...input, tenantId: principal.tenantId }),
+        );
+    }
+}
+
+export class List{{pascalCase name}}sUseCase {
+    constructor(private readonly repository: I{{pascalCase name}}Repository) {}
+
+    async execute(
+        options: QueryOptions<{{pascalCase name}}Filters, {{pascalCase name}}SortField>,
+    ): Promise<Paginated<{{pascalCase name}}Entity>> {
+        return paginate(this.repository, options);
+    }
+}
+
+export class Get{{pascalCase name}}UseCase {
+    constructor(private readonly repository: I{{pascalCase name}}Repository) {}
+
+    async execute(id: string): Promise<{{pascalCase name}}Entity> {
+        const entity = await this.repository.findById(id);
+        if (!entity) throw new NotFoundError("{{pascalCase name}}", id);
+        return entity;
+    }
+}
+
+export class Update{{pascalCase name}}UseCase {
+    constructor(private readonly repository: I{{pascalCase name}}Repository) {}
+
+    async execute(
+        principal: AuthenticatedPrincipal,
+        id: string,
+        input: Update{{pascalCase name}}InputDto,
+    ): Promise<{{pascalCase name}}Entity> {
+        assertTenantAdmin(principal);
+
+        const entity = await this.repository.findById(id);
+        if (!entity) throw new NotFoundError("{{pascalCase name}}", id);
+
+        entity.update(input);
+        return this.repository.update(entity);
+    }
+}
+
+export class Delete{{pascalCase name}}UseCase {
+    constructor(private readonly repository: I{{pascalCase name}}Repository) {}
+
+    async execute(principal: AuthenticatedPrincipal, id: string): Promise<void> {
+        assertTenantAdmin(principal);
+
+        const entity = await this.repository.findById(id);
+        if (!entity) throw new NotFoundError("{{pascalCase name}}", id);
+
+        // Soft by default: a hard delete breaks every historical row that
+        // references this one and cannot be undone.
+        entity.softDelete();
+        await this.repository.update(entity);
+    }
+}

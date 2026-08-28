@@ -1,0 +1,18 @@
+import type { Prisma } from "../generated/client";
+import type { {{pascalCase name}}Filters } from "../../../domain/repositories/{{kebabCase name}}.repository.interface";
+import { searchAcross, softDeleteWhere } from "./sort";
+
+export function build{{pascalCase name}}Where(
+    filters: {{pascalCase name}}Filters,
+): Prisma.{{pascalCase name}}WhereInput {
+    const or = searchAcross(filters.search, ["name"]);
+
+    // No tenantId here on purpose: the Prisma extension injects it. Adding it
+    // by hand would be harmless but misleading — scoping is not optional and
+    // is not this file's job.
+    return {
+        ...softDeleteWhere(filters.includeDeleted),
+        ...(filters.isActive !== undefined && { isActive: filters.isActive }),
+        ...(or && { OR: or }),
+    };
+}

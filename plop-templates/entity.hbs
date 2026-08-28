@@ -1,0 +1,89 @@
+import { Guard } from "../validation";
+
+export interface {{pascalCase name}}Props {
+    id: string;
+    tenantId: string;
+    name: string;
+    isActive: boolean;
+    createdAt: Date;
+    updatedAt: Date;
+    deletedAt: Date | null;
+}
+
+export interface Create{{pascalCase name}}Input {
+    tenantId: string;
+    name: string;
+    isActive?: boolean;
+}
+
+export type Update{{pascalCase name}}Input = Partial<Omit<Create{{pascalCase name}}Input, "tenantId">>;
+
+export class {{pascalCase name}}Entity {
+    private constructor(private props: {{pascalCase name}}Props) {}
+
+    /** Builds a NEW entity. Runs every invariant. */
+    static create(input: Create{{pascalCase name}}Input): {{pascalCase name}}Entity {
+        Guard.begin()
+            .uuid("tenantId", input.tenantId)
+            .requiredString("name", input.name)
+            .throwIfInvalid("{{pascalCase name}}");
+
+        const now = new Date();
+        return new {{pascalCase name}}Entity({
+            id: "",
+            tenantId: input.tenantId,
+            name: input.name.trim(),
+            isActive: input.isActive ?? true,
+            createdAt: now,
+            updatedAt: now,
+            deletedAt: null,
+        });
+    }
+
+    /**
+     * Rebuilds from a persisted row. Deliberately does NOT re-run creation
+     * validation — tightening a rule must never make existing rows unreadable.
+     */
+    static rehydrate(props: {{pascalCase name}}Props): {{pascalCase name}}Entity {
+        return new {{pascalCase name}}Entity({ ...props });
+    }
+
+    get id(): string {
+        return this.props.id;
+    }
+    get tenantId(): string {
+        return this.props.tenantId;
+    }
+    get name(): string {
+        return this.props.name;
+    }
+    get isActive(): boolean {
+        return this.props.isActive;
+    }
+    get deletedAt(): Date | null {
+        return this.props.deletedAt;
+    }
+
+    update(input: Update{{pascalCase name}}Input): this {
+        if (input.name !== undefined) {
+            Guard.begin().requiredString("name", input.name).throwIfInvalid("{{pascalCase name}}");
+            this.props.name = input.name.trim();
+        }
+        if (input.isActive !== undefined) this.props.isActive = input.isActive;
+
+        this.props.updatedAt = new Date();
+        return this;
+    }
+
+    softDelete(): this {
+        if (this.props.deletedAt) return this;
+        this.props.deletedAt = new Date();
+        this.props.isActive = false;
+        this.props.updatedAt = new Date();
+        return this;
+    }
+
+    toPrimitives(): Readonly<{{pascalCase name}}Props> {
+        return { ...this.props };
+    }
+}

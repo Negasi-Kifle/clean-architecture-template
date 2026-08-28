@@ -1,0 +1,24 @@
+import type { {{pascalCase name}} } from "../generated/client";
+import { {{pascalCase name}}Entity } from "../../../domain/entities/{{kebabCase name}}.entity";
+
+export function to{{pascalCase name}}Entity(row: {{pascalCase name}}): {{pascalCase name}}Entity {
+    return {{pascalCase name}}Entity.rehydrate({
+        id: row.id,
+        tenantId: row.tenantId,
+        name: row.name,
+        isActive: row.isActive,
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
+        deletedAt: row.deletedAt,
+    });
+}
+
+export function to{{pascalCase name}}CreateData(entity: {{pascalCase name}}Entity) {
+    const p = entity.toPrimitives();
+    return { tenantId: p.tenantId, name: p.name, isActive: p.isActive };
+}
+
+export function to{{pascalCase name}}UpdateData(entity: {{pascalCase name}}Entity) {
+    const p = entity.toPrimitives();
+    return { name: p.name, isActive: p.isActive, deletedAt: p.deletedAt };
+}

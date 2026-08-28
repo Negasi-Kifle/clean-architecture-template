@@ -1,0 +1,76 @@
+import type { Request, Response } from "express";
+import type {
+    Create{{pascalCase name}}UseCase,
+    Delete{{pascalCase name}}UseCase,
+    Get{{pascalCase name}}UseCase,
+    List{{pascalCase name}}sUseCase,
+    Update{{pascalCase name}}UseCase,
+} from "../../application/use-cases/{{camelCase name}}s/{{kebabCase name}}.usecases";
+import { mapPaginated } from "../../application/paginate";
+import type {
+    Create{{pascalCase name}}Dto,
+    List{{pascalCase name}}sDto,
+    Update{{pascalCase name}}Dto,
+} from "../DTOs/request/{{camelCase name}}s/{{kebabCase name}}.dto";
+import type { UuidParam } from "../DTOs/request/common.dto";
+import { to{{pascalCase name}}Response } from "../DTOs/response/{{kebabCase name}}.response";
+import { toPagination } from "../mappers";
+import { getValidated } from "../validators";
+import { requirePrincipal } from "../middleware";
+import { created, noContent, ok, paginated } from "../response";
+
+/**
+ * Handlers are arrow properties so they can be passed straight to a router.
+ * No try/catch: Express 5 forwards a rejected promise to the error middleware.
+ */
+export class {{pascalCase name}}Controller {
+    constructor(
+        private readonly create{{pascalCase name}}UseCase: Create{{pascalCase name}}UseCase,
+        private readonly list{{pascalCase name}}sUseCase: List{{pascalCase name}}sUseCase,
+        private readonly get{{pascalCase name}}UseCase: Get{{pascalCase name}}UseCase,
+        private readonly update{{pascalCase name}}UseCase: Update{{pascalCase name}}UseCase,
+        private readonly delete{{pascalCase name}}UseCase: Delete{{pascalCase name}}UseCase,
+    ) {}
+
+    create = async (req: Request, res: Response): Promise<void> => {
+        const principal = requirePrincipal(req);
+        const body = getValidated<Create{{pascalCase name}}Dto>(res, "body");
+        const entity = await this.create{{pascalCase name}}UseCase.execute(principal, body);
+        created(res, to{{pascalCase name}}Response(entity), "{{pascalCase name}} created");
+    };
+
+    list = async (_req: Request, res: Response): Promise<void> => {
+        const query = getValidated<List{{pascalCase name}}sDto>(res, "query");
+        const result = await this.list{{pascalCase name}}sUseCase.execute({
+            pagination: toPagination(query),
+            sort: query.sort,
+            filters: {
+                ...(query.search !== undefined && { search: query.search }),
+                ...(query.isActive !== undefined && { isActive: query.isActive }),
+                ...(query.includeDeleted !== undefined && { includeDeleted: query.includeDeleted }),
+            },
+        });
+        paginated(res, mapPaginated(result, to{{pascalCase name}}Response));
+    };
+
+    getById = async (_req: Request, res: Response): Promise<void> => {
+        const { id } = getValidated<UuidParam>(res, "params");
+        ok(res, to{{pascalCase name}}Response(await this.get{{pascalCase name}}UseCase.execute(id)));
+    };
+
+    update = async (req: Request, res: Response): Promise<void> => {
+        const principal = requirePrincipal(req);
+        const { id } = getValidated<UuidParam>(res, "params");
+        // From res.locals, never req.body — req.body has not been validated.
+        const body = getValidated<Update{{pascalCase name}}Dto>(res, "body");
+        const entity = await this.update{{pascalCase name}}UseCase.execute(principal, id, body);
+        ok(res, to{{pascalCase name}}Response(entity), "{{pascalCase name}} updated");
+    };
+
+    delete = async (req: Request, res: Response): Promise<void> => {
+        const principal = requirePrincipal(req);
+        const { id } = getValidated<UuidParam>(res, "params");
+        await this.delete{{pascalCase name}}UseCase.execute(principal, id);
+        noContent(res);
+    };
+}

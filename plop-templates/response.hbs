@@ -1,0 +1,24 @@
+import type { {{pascalCase name}}Entity } from "../../../domain/entities/{{kebabCase name}}.entity";
+
+export interface {{pascalCase name}}Response {
+    id: string;
+    name: string;
+    isActive: boolean;
+    createdAt: string;
+    updatedAt: string;
+}
+
+/**
+ * Built field by field rather than by spreading the entity: a spread would
+ * leak any sensitive prop added later straight to the client.
+ */
+export function to{{pascalCase name}}Response(entity: {{pascalCase name}}Entity): {{pascalCase name}}Response {
+    const p = entity.toPrimitives();
+    return {
+        id: p.id,
+        name: p.name,
+        isActive: p.isActive,
+        createdAt: p.createdAt.toISOString(),
+        updatedAt: p.updatedAt.toISOString(),
+    };
+}

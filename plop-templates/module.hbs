@@ -1,0 +1,35 @@
+import {
+    Create{{pascalCase name}}UseCase,
+    Delete{{pascalCase name}}UseCase,
+    Get{{pascalCase name}}UseCase,
+    List{{pascalCase name}}sUseCase,
+    Update{{pascalCase name}}UseCase,
+} from "../application/use-cases/{{camelCase name}}s/{{kebabCase name}}.usecases";
+import { {{pascalCase name}}Controller } from "../presentation/controllers/{{kebabCase name}}.controller";
+import { {{pascalCase name}}Repository } from "../infrastructure/prisma/repositories/{{kebabCase name}}.repository";
+import { prisma } from "../infrastructure/prisma/prisma.client";
+
+export interface {{pascalCase name}}Module {
+    controller: {{pascalCase name}}Controller;
+}
+
+/**
+ * Wiring for the {{lowerCase name}} domain.
+ *
+ * The repository is built here because only this module uses it. Anything
+ * shared by two or more modules belongs in SharedInfra instead — that rule is
+ * what stops this folder turning into a service locator.
+ */
+export function build{{pascalCase name}}Module(): {{pascalCase name}}Module {
+    const repository = new {{pascalCase name}}Repository(prisma);
+
+    return {
+        controller: new {{pascalCase name}}Controller(
+            new Create{{pascalCase name}}UseCase(repository),
+            new List{{pascalCase name}}sUseCase(repository),
+            new Get{{pascalCase name}}UseCase(repository),
+            new Update{{pascalCase name}}UseCase(repository),
+            new Delete{{pascalCase name}}UseCase(repository),
+        ),
+    };
+}

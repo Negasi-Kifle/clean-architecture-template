@@ -1,0 +1,29 @@
+import { z } from "zod";
+import { booleanQuery, paginationSchema, sortQuery } from "../common.dto";
+
+export const {{constantCase name}}_SORT_FIELDS = ["createdAt", "updatedAt", "name"] as const;
+
+/** `.strict()` so a misspelled or unexpected field is a 400, not a silent no-op. */
+export const create{{pascalCase name}}Schema = z
+    .object({
+        name: z.string().trim().min(1, "Name is required").max(200),
+        isActive: z.boolean().default(true),
+    })
+    .strict();
+export type Create{{pascalCase name}}Dto = z.infer<typeof create{{pascalCase name}}Schema>;
+
+export const update{{pascalCase name}}Schema = create{{pascalCase name}}Schema
+    .partial()
+    .strict()
+    .refine((data) => Object.keys(data).length > 0, "Provide at least one field to update");
+export type Update{{pascalCase name}}Dto = z.infer<typeof update{{pascalCase name}}Schema>;
+
+export const list{{pascalCase name}}sSchema = paginationSchema
+    .extend({
+        search: z.string().trim().min(1).max(100).optional(),
+        isActive: booleanQuery,
+        includeDeleted: booleanQuery,
+        sort: sortQuery({{constantCase name}}_SORT_FIELDS),
+    })
+    .strict();
+export type List{{pascalCase name}}sDto = z.infer<typeof list{{pascalCase name}}sSchema>;
